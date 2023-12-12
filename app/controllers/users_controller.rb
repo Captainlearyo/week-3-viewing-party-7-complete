@@ -1,7 +1,8 @@
-class UsersController <ApplicationController 
-  def new 
-    @user = User.new()
-  end 
+class UsersController < ApplicationController 
+  def new
+    @user = User.new
+    render :new
+  end
 
   def show 
     @user = User.find(params[:id])
@@ -11,6 +12,7 @@ class UsersController <ApplicationController
     user = user_params
     user[:name] = user[:name].downcase
     new_user = User.create(user)
+    session[:user_id] = new_user.id
     if new_user.save && user[:password] == user[:password_confirmation]
       redirect_to user_path(new_user)
     else  
@@ -24,8 +26,19 @@ class UsersController <ApplicationController
 
   def login
     user = User.find_by(name: params[:name])
-    flash[:success] = "Welcome!"
-    redirect_to root_path
+    #binding.pry
+    if user && user.authenticate(params[:password])
+      session[:user_id] = user.id
+      flash[:success] = "Welcome, #{user.name}!"
+      if user.admin?
+        redirect_to admin_dashboard_path
+      else
+        redirect_to root_path
+      end
+    else
+      flash.now[:error] = "Sorry, your credentials are bad."
+      render :login_form
+    end
   end
 
   private 
